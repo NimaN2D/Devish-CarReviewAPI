@@ -7,7 +7,6 @@ use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Link;
 use App\Repository\ReviewRepository;
 use Doctrine\DBAL\Types\Types;
@@ -21,10 +20,20 @@ use Symfony\Component\Validator\Constraints as Assert;
         denormalizationContext: ['groups' => ['review:write']],
     ),
     ApiResource(
-        uriTemplate: '/cars/{carId}/reviews',
-        operations: [new GetCollection()],
+        uriTemplate: '/cars/{car}/reviews',
+        operations: [new Get()],
         uriVariables: [
-            'carId' => new Link(
+            'id' => new Link(
+                fromProperty: 'reviews',
+                fromClass: Car::class
+            )
+        ]
+    ),
+    ApiResource(
+        uriTemplate: '/users/{user}/reviews',
+        operations: [new Get()],
+        uriVariables: [
+            'id' => new Link(
                 fromProperty: 'reviews',
                 fromClass: Car::class
             )
@@ -50,12 +59,6 @@ use Symfony\Component\Validator\Constraints as Assert;
 ]
 class Review
 {
-
-    public function __construct()
-    {
-        $this->createdAt = new \DateTimeImmutable();
-    }
-
     #[
         ORM\Id,
         ORM\GeneratedValue,
@@ -70,7 +73,7 @@ class Review
         Assert\NotBlank(message: 'Rating cannot be blank.'),
         Assert\Range(notInRangeMessage: 'Rating must be between {{ min }} and {{ max }}.', min: 0, max: 10),
 
-        Groups(['review:read', 'review:write', 'car:read'])
+        Groups(['review:read', 'review:write'])
     ]
     private int $rating = 0;
 
@@ -84,7 +87,7 @@ class Review
             maxMessage: 'Review cannot be longer than {{ limit }} characters.'
         ),
 
-        Groups(['review:read', 'review:write', 'car:read'])
+        Groups(['review:read', 'review:write'])
     ]
     private ?string $review = null;
 
@@ -96,9 +99,18 @@ class Review
             ]
         ),
 
-        Groups(['review:read', 'car:read'])
+        Groups(['review:read'])
     ]
     private \DateTimeInterface $createdAt;
+
+    #[
+        ORM\ManyToOne(inversedBy: 'reviews'),
+        ORM\JoinColumn(nullable: false),
+        Assert\NotBlank(message: 'User cannot be blank.'),
+
+        Groups(['review:read', 'review:write', 'user:read'])
+    ]
+    private User $user;
 
     #[
         ORM\ManyToOne(inversedBy: 'reviews'),
@@ -145,14 +157,14 @@ class Review
         return $this;
     }
 
-    public function getCreatedAt(): \DateTimeInterface
+    public function getUser(): ?User
     {
-        return $this->createdAt;
+        return $this->user;
     }
 
-    public function setCreatedAt(\DateTimeInterface $createdAt): static
+    public function setUser(?User $user): static
     {
-        $this->createdAt = $createdAt;
+        $this->user = $user;
 
         return $this;
     }
@@ -162,9 +174,21 @@ class Review
         return $this->car;
     }
 
-    public function setCar(Car $car): static
+    public function setCar(?Car $car): static
     {
         $this->car = $car;
+
+        return $this;
+    }
+
+    public function getCreatedAt(): \DateTimeInterface
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(?\DateTimeInterface $createdAt): static
+    {
+        $this->createdAt = $createdAt;
 
         return $this;
     }

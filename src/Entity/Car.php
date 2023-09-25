@@ -3,8 +3,11 @@
 namespace App\Entity;
 
 use ApiPlatform\Doctrine\Odm\Filter\OrderFilter;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\Link;
 use App\Repository\CarRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -16,6 +19,35 @@ use Symfony\Component\Validator\Constraints as Assert;
     ApiResource(
         normalizationContext: ['groups' => ['car:read']],
         denormalizationContext: ['groups' => ['car:write']],
+    ),
+    ApiResource(
+        uriTemplate: '/manufacturers/{manufacturer}/cars',
+        operations: [new Get()],
+        uriVariables: [
+            'id' => new Link(
+                fromProperty: 'cars',
+                fromClass: Manufacturer::class
+            )
+        ]
+    ),
+    ApiResource(
+        uriTemplate: '/models/{model}/cars',
+        operations: [new Get()],
+        uriVariables: [
+            'id' => new Link(
+                fromProperty: 'cars',
+                fromClass: Model::class
+            )
+        ]
+    ),
+    ApiFilter(
+        SearchFilter::class,
+        properties: [
+            'name' => 'partial',
+            'manufacturer' => 'exact',
+            'model' => 'exact',
+            'year' => 'exact',
+        ]
     ),
     ApiFilter(
         OrderFilter::class,
@@ -41,27 +73,54 @@ class Car
 
     #[
         ORM\Column(length: 255),
-        Assert\NotBlank(message: 'Brand cannot be blank.'),
+        Assert\NotBlank(message: 'Name cannot be blank.'),
 
         Groups(['car:read','car:write'])
     ]
-    private string $brand;
+    private string $name;
 
     #[
-        ORM\Column(length: 255),
+        ORM\Column,
+        Assert\NotBlank(message: 'Year cannot be blank.'),
+        Assert\Range(
+            notInRangeMessage: 'Year must be between {{ min }} and {{ max }}.',
+            min: 1900,
+            max: 2023, //TODO max should be dynamic
+        ),
+
+        Groups(['car:read','car:write'])
+    ]
+    private int $year;
+
+    #[
+        ORM\ManyToOne(inversedBy: 'cars'),
+        ORM\JoinColumn(nullable: false),
+        Assert\NotBlank(message: 'Manufacturer cannot be blank.'),
+        Assert\Valid,
+
+        Groups(['car:read', 'car:write', 'manufacturer:read'])
+    ]
+    private Manufacturer $manufacturer;
+
+    #[
+        ORM\ManyToOne(inversedBy: 'cars'),
+        ORM\JoinColumn(nullable: false),
         Assert\NotBlank(message: 'Model cannot be blank.'),
+        Assert\Valid,
 
-        Groups(['car:read','car:write'])
+        Groups(['car:read', 'car:write'])
     ]
-    private string $model;
+    private Model $model;
 
     #[
-        ORM\Column(length: 255),
-        Assert\NotBlank(message: 'Color cannot be blank.'),
+        ORM\ManyToOne(inversedBy: 'cars'),
+        ORM\JoinColumn(nullable: false),
+        Assert\NotBlank(message: 'User cannot be blank.'),
+        Assert\Valid,
 
-        Groups(['car:read','car:write'])
+        Groups(['car:read'])
     ]
-    private string $color;
+    private User $creator;
 
     #[
         ORM\OneToMany(mappedBy: 'car', targetEntity: Review::class, orphanRemoval: true),
@@ -88,34 +147,52 @@ class Car
         return $this;
     }
 
-    public function getBrand(): string
+    public function getManufacturer(): ?Manufacturer
     {
-        return $this->brand;
+        return $this->manufacturer;
     }
 
-    public function setBrand(string $brand): void
+    public function setManufacturer(?Manufacturer $manufacturer): static
     {
-        $this->brand = $brand;
+        $this->manufacturer = $manufacturer;
+
+        return $this;
     }
 
-    public function getModel(): string
+    public function getYear(): ?int
+    {
+        return $this->year;
+    }
+
+    public function setYear(int $year): static
+    {
+        $this->year = $year;
+
+        return $this;
+    }
+
+    public function getModel(): Model
     {
         return $this->model;
     }
 
-    public function setModel(string $model): void
+    public function setModel(Model $model): static
     {
         $this->model = $model;
+
+        return $this;
     }
 
-    public function getColor(): string
+    public function getCreator(): User
     {
-        return $this->color;
+        return $this->creator;
     }
 
-    public function setColor(string $color): void
+    public function setCreator(User $model): static
     {
-        $this->color = $color;
+        $this->creator = $model;
+
+        return $this;
     }
 
     public function getReviews(): Collection
@@ -136,11 +213,22 @@ class Car
     public function removeReview(Review $review): static
     {
         if ($this->reviews->removeElement($review)) {
+            // set the owning side to null (unless already changed)
             if ($review->getCar() === $this) {
                 $review->setCar(null);
             }
         }
 
         return $this;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function setName(string $name): void
+    {
+        $this->name = $name;
     }
 }

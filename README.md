@@ -1,10 +1,10 @@
 # Devish assessment task
 
-Welcome to Devish task! This is the master branch of our Symfony project. It contains the latest stable version of our project.
+Welcome to Devish task! This is the development branch of our Symfony project.
 
 ## Introduction
 
-This is the latest stable version of our project. It is a RESTful API that allows you to manage car reviews.
+This is the development version of our project. It includes all the features and entities, such as Car, Review, User, Model, and Manufacture.
 
 ## Prerequisites
 

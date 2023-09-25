@@ -47,9 +47,11 @@ final class CarFactory extends ModelFactory
     protected function getDefaults(): array
     {
         return [
-            'brand' => self::faker()->text(255),
-            'color' => self::faker()->text(255),
-            'model' => self::faker()->text(255),
+            'creator' => UserFactory::new(),
+            'manufacturer' => ManufacturerFactory::new(),
+            'model' => ModelFactory::new(),
+            'name' => self::faker()->text(255),
+            'year' => self::faker()->randomNumber(),
         ];
     }
 

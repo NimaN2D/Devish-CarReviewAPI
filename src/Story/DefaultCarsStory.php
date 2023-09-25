@@ -9,6 +9,6 @@ final class DefaultCarsStory extends Story
 {
     public function build(): void
     {
-        CarFactory::createMany(20);
+        CarFactory::createMany(50);
     }
 }

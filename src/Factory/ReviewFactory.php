@@ -49,7 +49,8 @@ final class ReviewFactory extends ModelFactory
         return [
             'car' => CarFactory::new(),
             'createdAt' => self::faker()->dateTime(),
-            'rating' => self::faker()->randomNumber(),
+            'rating' => self::faker()->numberBetween(1,10),
+            'user' => UserFactory::new(),
         ];
     }
 
