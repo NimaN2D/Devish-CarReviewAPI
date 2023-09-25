@@ -1,0 +1,12 @@
+parameters:
+    # Override database_url in test environment
+    # Example: "sqlite:///%kernel.project_dir%/var/test.db"
+    env(DATABASE_URL): ''
+
+doctrine:
+    dbal:
+        default_connection: default
+        connections:
+            default:
+                driver: 'pdo_sqlite'
+                url: '%env(resolve:DATABASE_URL)%'
